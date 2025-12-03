@@ -8,12 +8,46 @@ import (
 	"strconv"
 )
 
+type State struct {
+	number int
+	count  int
+}
+
 func mod(a, b int) int {
 	return ((a % b) + b) % b
 }
 
-func main() {
-	file, err := os.Open("input.txt")
+func part1(direction string, amount int, state *State) {
+	if direction == "L" {
+		state.number = mod(state.number-amount, 100)
+	} else {
+		state.number = mod(state.number+amount, 100)
+	}
+
+	if state.number == 0 {
+		state.count++
+	}
+}
+
+func part2(direction string, amount int, state *State) {
+	var temp int
+	if direction == "L" {
+		temp = state.number - amount
+	} else {
+		temp = state.number + amount
+	}
+
+	if amount >= 100 {
+		state.count += amount / 100
+	} else if temp <= 0 || temp > 99 {
+		state.count++
+	}
+
+	state.number = mod(temp, 100)
+}
+
+func process(filename string, updateState func(string, int, *State)) {
+	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatalf("Error opening file: %v", err)
 	}
@@ -21,33 +55,27 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 
-	number := 50
-	count := 0
+	state := &State{
+		number: 50,
+		count:  0,
+	}
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		direction := line[:1]
 		amount, err := strconv.Atoi(line[1:])
 		if err != nil {
-			panic(err)
+			log.Fatalf("Error parsing number: %v\n", err)
 		}
-		var temp int
-		if direction == "L" {
-			temp = number - amount
-		} else {
-			temp = number + amount
-		}
-
-		if amount >= 100 {
-			count += amount / 100
-		} else if temp <= 0 || temp > 99 {
-			count++
-		}
-
-		number = mod(temp, 100)
-		fmt.Println(temp, number)
+		updateState(direction, amount, state)
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Error reading file: %v", err)
 	}
-	fmt.Println(count)
+	fmt.Println(state.count)
+}
+
+func main() {
+	process("input.txt", part1)
+	process("input.txt", part2)
 }
